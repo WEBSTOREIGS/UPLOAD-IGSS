@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UPLOAD IGS - Super Matang Pro System</title>
+    
+    <!-- Core External SDK & UI Kits -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #040509;
+            --bg-card: #0b0d19;
+            --bg-input: #121526;
+            --primary: #0052ff;
+            --primary-glow: rgba(0, 82, 255, 0.35);
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.25);
+            --text-main: #ffffff;
+            --text-muted: #6f7f95;
+            --success: #00e676;
+            --success-glow: rgba(0, 230, 118, 0.2);
+            --danger: #ff1744;
+            --warning: #ffb300;
+            --purple: #af40ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-input); border-radius: 10px; }
+
+        .loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); z-index: 99999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .spinner-container { width: 80px; height: 80px; position: relative; }
+        .spinner-outer {
+            width: 100%; height: 100%; border: 4px solid transparent;
+            border-top-color: var(--primary); border-bottom-color: var(--accent);
+            border-radius: 50%; animation: spinMaster 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+        }
+        .spinner-inner {
+            position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border: 3px solid transparent; border-left-color: var(--purple); border-right-color: var(--success);
+            border-radius: 50%; animation: spinMaster 2s linear infinite reverse;
+        }
+        @keyframes spinMaster { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { margin-top: 24px; font-size: 13px; font-weight: 800; letter-spacing: 3px; color: var(--text-main); animation: pulseNeon 1.5s infinite; text-align: center; }
+        @keyframes pulseNeon { 0%, 100% { opacity: 0.3; filter: blur(0.5px); } 50% { opacity: 1; filter: drop-shadow(0 0 10px var(--accent-glow)); } }
+
+        .auth-wrapper { width: 100%; max-width: 430px; padding: 30px 16px; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+        .auth-card { background: var(--bg-card); border: 1px solid rgba(255,255,255,0.03); border-radius: 28px; padding: 36px 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.8), 0 0 60px rgba(0, 82, 255, 0.05); }
+        .brand-section { text-align: center; margin-bottom: 30px; }
+        .brand-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #fff 20%, var(--primary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .brand-title i { color: var(--primary); -webkit-text-fill-color: initial; filter: drop-shadow(0 0 8px var(--primary-glow)); }
+        .brand-tagline { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+        .form-group { margin-bottom: 18px; position: relative; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .input-box { position: relative; }
+        .input-box i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; transition: color 0.3s; }
+        
+        .form-control { width: 100%; background: var(--bg-input); border: 1px solid rgba(255,255,255,0.04); border-radius: 14px; padding: 14px 16px 14px 46px; color: var(--text-main); font-size: 14px; transition: all 0.3s; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
+        .form-control:focus + i { color: var(--primary); }
+
+        .btn-glow { width: 100%; background: linear-gradient(135deg, var(--primary) 0%, #0040cc 100%); border: none; border-radius: 14px; padding: 15px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 5px 15px var(--primary-glow); margin-top: 24px; }
+        .btn-glow:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0, 82, 255, 0.5); }
+        .switch-auth { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
+        .switch-auth span { color: var(--primary); cursor: pointer; font-weight: 700; }
+
+        .app-wrapper { width: 100%; padding: 12px; max-width: 560px; margin: 0 auto; display: none; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 16px 20px; border-radius: 18px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.02); }
+        .user-profile-info { display: flex; align-items: center; gap: 12px; }
+        .avatar-circle { width: 40px; height: 40px; background: rgba(0,82,255,0.1); border: 2px solid var(--primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--primary); font-weight: 800; font-size: 14px; }
+        .user-meta h4 { font-size: 13px; font-weight: 800; letter-spacing: 0.3px; }
+        .user-meta span { font-size: 11px; color: var(--text-muted); display: block; margin-top: 1px; }
+
+        .btn-logout { background: rgba(255,23,68,0.08); border: none; width: 36px; height: 36px; border-radius: 10px; color: var(--danger); cursor: pointer; transition: 0.3s; }
+        .btn-logout:hover { background: var(--danger); color: white; box-shadow: 0 0 10px rgba(255,23,68,0.4); }
+
+        .announcement-box { background: linear-gradient(135deg, rgba(0,82,255,0.15) 0%, rgba(175,64,255,0.05) 100%); border: 1px solid rgba(0,82,255,0.3); border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; display: none; align-items: flex-start; gap: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .announcement-box i { color: var(--accent); font-size: 18px; margin-top: 2px; animation: bounceSmooth 2s infinite; }
+        @keyframes bounceSmooth { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .announcement-body h5 { font-size: 12px; font-weight: 800; margin-bottom: 2px; color: var(--accent); letter-spacing: 0.5px; }
+        .announcement-body p { font-size: 11px; color: #e5ecf4; line-height: 1.5; }
+
+        .tab-navigation { display: flex; background: var(--bg-card); border-radius: 16px; padding: 6px; margin-bottom: 14px; gap: 6px; border: 1px solid rgba(255,255,255,0.01); }
+        .tab-btn { flex: 1; background: transparent; border: none; padding: 10px 4px; color: var(--text-muted); font-size: 11px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 6px 14px var(--primary-glow); }
+        .tab-btn i { font-size: 15px; }
+
+        .panel-content { display: none; background: var(--bg-card); border-radius: 20px; padding: 18px; border: 1px solid rgba(255,255,255,0.01); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .panel-content.active { display: block; }
+        .panel-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel-title span { display: flex; align-items: center; gap: 8px; }
+        .panel-title i { color: var(--primary); }
+
+        .gallery-filter { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 6px; }
+        .filter-chip { background: var(--bg-input); border: 1px solid rgba(255,255,255,0.03); padding: 8px 14px; border-radius: 24px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .filter-chip.active { background: rgba(0,240,255,0.1); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(0,240,255,0.15); }
+        
+        .gallery-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .show-card { background: var(--bg-input); border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.02); box-shadow: 0 6px 15px rgba(0,0,0,0.2); position: relative; }
+        .show-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.06); padding-bottom: 8px; }
+        .uploader-badge { font-size: 11px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 5px; }
+        .content-badge { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        .badge-file { background: rgba(0,82,255,0.15); color: #4489ff; }
+        .badge-teks { background: rgba(175,64,255,0.15); color: #c67aff; }
+        .badge-produk { background: rgba(0,230,118,0.15); color: var(--success); }
+        
+        .show-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: white; }
+        .show-body p { font-size: 12px; color: #b2becd; line-height: 1.5; word-break: break-word; }
+        .show-price { font-size: 14px; font-weight: 800; color: var(--success); margin-top: 8px; display: block; }
+        
+        .chat-room-container { background: var(--bg-input); border-radius: 16px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 14px; padding: 12px; }
+        .chat-room-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.06); padding-bottom: 8px; margin-bottom: 10px; font-size: 12px; }
+        .chat-messages-box { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; margin-bottom: 10px; }
+        .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 14px; font-size: 12px; line-height: 1.4; word-break: break-word; }
+        .msg-bubble.me { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-bubble.them { background: rgba(255,255,255,0.06); color: #e5ecf4; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-time { font-size: 9px; color: rgba(255,255,255,0.4); display: block; text-align: right; margin-top: 4px; }
+        .chat-input-wrapper { display: flex; gap: 8px; }
+        .chat-input-wrapper input { flex: 1; background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: white; font-size: 12px; }
+        .chat-input-wrapper input:focus { outline: none; border-color: var(--accent); }
+        .btn-send-chat { background: var(--accent); color: #000; border: none; width: 34px; height: 34px; border-radius: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 13px; transition: 0.2s; }
+        .btn-send-chat:hover { opacity: 0.8; box-shadow: 0 0 10px var(--accent-glow); }
+
+        .btn-action-order { width: 100%; background: rgba(0,230,118,0.08); border: 1px solid rgba(0,230,118,0.25); color: var(--success); padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-top: 12px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .btn-action-order:hover { background: var(--success); color: #000; box-shadow: 0 4px 12px var(--success-glow); }
+
+        .admin-toggle-bar { display: flex; background: var(--bg-dark); padding: 4px; border-radius: 12px; margin-bottom: 16px; gap: 4px; border: 1px solid rgba(255,255,255,0.02); }
+        .toggle-sub-btn { flex: 1; background: transparent; border: none; padding: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); border-radius: 10px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .toggle-sub-btn.active { background: var(--bg-input); color: var(--accent); border: 1px solid rgba(0,240,240,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        
+        .admin-sub-zone { display: none; }
+        .admin-sub-zone.active { display: block; }
+
+        .moderation-card { background: var(--bg-input); border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.02); }
+        .mod-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+        .btn-mod { padding: 6px 12px; border: none; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-mod.approve { background: var(--success); color: #000; }
+        .btn-mod.reject { background: var(--danger); color: #fff; }
+
+        .live-ads-badge { background: rgba(0,240,255,0.08); border: 1px dashed var(--accent); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+        .hidden { display: none !important; }
+
+        /* Online Monitoring Status Style */
+        .online-user-card { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px; }
+        .online-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+        .dot-pulse { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); animation: pulseGlow 1.5s infinite; }
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: ANIMASI LOADING SCREEN -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner-container">
+            <div class="spinner-outer"></div>
+            <div class="spinner-inner"></div>
+        </div>
+        <div class="loading-text" id="loadingText">MENGHUBUNGKAN KE SERVER UPLOAD IGS...</div>
+    </div>
+
+    <!-- SCREEN 2: INTERFACE AUTHENTICATION FORM -->
+    <div class="auth-wrapper" id="authInterface">
+        <div class="auth-card">
+            <div class="brand-section">
+                <div class="brand-title"><i class="fa-solid fa-layer-group"></i> UPLOAD IGS</div>
+                <div class="brand-tagline" id="authSubtitle">Sistem Keamanan Akses Enkripsi PIN Cloud</div>
+            </div>
+
+            <!-- Form Register -->
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="regUsername" class="form-control" placeholder="Buat nama pengguna" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="regPassword" class="form-control" placeholder="Buat password aman" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>PIN Akses Masuk</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <input type="password" id="regPin" class="form-control" placeholder="PIN Bebas (4-6 Angka)" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-glow">Buat Akun Baru <i class="fa-solid fa-user-plus"></i></button>
+                <div class="switch-auth">Sudah punya akun? <span onclick="switchAuth(false)">Login Di Sini</span></div>
+            </form>
+
+            <!-- Form Login -->
+            <form id="loginForm" class="hidden">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="logUsername" class="form-control" placeholder="Masukkan nama pengguna" required autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="logPassword" class="form-control" placeholder="Masukkan password Anda" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>PIN Akses Masuk</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <input type="password" id="logPin" class="form-control" placeholder="Masukkan PIN keamanan" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-glow">Akses Masuk <i class="fa-solid fa-right-to-bracket"></i></button>
+                <div class="switch-auth">Belum ada akun? <span onclick="switchAuth(true)">Daftar Sekarang</span></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: INTERFACE UTAMA APLIKASI -->
+    <div class="app-wrapper" id="appInterface">
+        <!-- Profile Header Area -->
+        <div class="app-header">
+            <div class="user-profile-info">
+                <div class="avatar-circle" id="userAvatar">U</div>
+                <div class="user-meta">
+                    <h4 id="displayUsername">Memuat...</h4>
+                    <span id="displayQuota">Sisa Kuota: 10 / 10 Item</span>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logoutSistem()" title="Keluar Akun"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+
+        <!-- Box Pengumuman Dinamis -->
+        <div class="announcement-box" id="announcementBox">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div class="announcement-body">
+                <h5 id="annTitle">PENGUMUMAN UTAMA</h5>
+                <p id="annBody">Pesan admin terbaru disiarkan di sini secara berkala.</p>
+            </div>
+        </div>
+
+     <!-- Navigasi Utama Tab Menu Mobile Friendly -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('showroomTab')"><i class="fa-solid fa-images"></i><span>Showroom</span></button>
+            <button class="tab-btn" onclick="switchTab('uploadTab')"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload</span></button>
+            <button class="tab-btn" onclick="switchTab('ordersTab')"><i class="fa-solid fa-envelope-open-text"></i><span>Kotak Chat</span></button>
+            <button class="tab-btn" onclick="switchTab('myFilesTab')"><i class="fa-solid fa-folder-open"></i><span>Data Saya</span></button>
+            <button class="tab-btn" id="adminMenuBtn" onclick="bukaGerbangAdmin()"><i class="fa-solid fa-user-gear"></i><span>Admin</span></button>
+        </nav>
+
+        <!-- TAB 1: SHOWROOM GALLERY -->
+        <div id="showroomTab" class="panel-content active">
+            <div class="panel-title"><span><i class="fa-solid fa-globe"></i> Galeri Publik Terbuka</span></div>
+            <div class="gallery-filter">
+                <div class="filter-chip active" onclick="filterGallery('all', this)">Semua Konten</div>
+                <div class="filter-chip" onclick="filterGallery('file', this)">Media / File</div>
+                <div class="filter-chip" onclick="filterGallery('teks', this)">Catatan Teks</div>
+                <div class="filter-chip" onclick="filterGallery('produk', this)">Katalog Produk</div>
+            </div>
+            <div class="gallery-grid" id="showroomGrid"></div>
+        </div>
+
+        <!-- TAB 2: UPLOAD FORM -->
+        <div id="uploadTab" class="panel-content">
+            <div class="panel-title"><span><i class="fa-solid fa-circle-nodes"></i> Unggah Konten Publik</span></div>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label>Pilih Jenis Unggahan</label>
+                    <select id="contentType" class="form-control" style="padding-left: 16px;" onchange="adjustUploadFields()">
+                        <option value="file">File Media (Foto / Video - Maks 10MB)</option>
+                        <option value="teks">Catatan / Teks Bebas</option>
+                        <option value="produk">Katalog / Produk Jualan (Ada Fitur Chat)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="titleGroup">
+                    <label>Judul Konten / Nama Item</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-t"></i>
+                        <input type="text" id="uploadTitle" class="form-control" placeholder="Beri nama unggahan Anda">
+                    </div>
+                </div>
+                <div class="form-group hidden" id="priceGroup">
+                    <label>Harga Produk (Rp)</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        <input type="number" id="uploadPrice" class="form-control" placeholder="Contoh: 25000">
+                    </div>
+                </div>
+                <div class="form-group hidden" id="textGroup">
+                    <label>Deskripsi / Isi Catatan</label>
+                    <textarea id="uploadText" class="form-control" style="padding-left:16px; min-height:100px; resize:vertical;" placeholder="Ketik deskripsi lengkap konten di sini..."></textarea>
+                </div>
+                <div class="form-group" id="fileGroup">
+                    <label>Pilih Berkas Media (Maks 10MB)</label>
+                    <div class="input-box">
+                        <i class="fa-solid fa-folder-plus"></i>
+                        <input type="file" id="uploadFile" class="form-control" accept="image/*,video/*">
+                    </div>
+                </div>
+                <button type="submit" class="btn-glow">Kirim Konten Ke Server <i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+
+        <!-- TAB 3: LIVE RE-ENGINEERED CHAT CENTER -->
+        <div id="ordersTab" class="panel-content">
+            <div class="panel-title"><span><i class="fa-solid fa-comments"></i> Pusat Chat Interaktif</span></div>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:12px; border-left:2px solid var(--danger); padding-left:6px;">
+                <i class="fa-regular fa-clock"></i> Riwayat obrolan otomatis dibersihkan sistem setiap 7 hari demi stabilitas RAM database.
+            </p>
+            <div id="orderListContainer"></div>
+        </div>
+
+        <!-- TAB 4: DATA SAYA -->
+        <div id="myFilesTab" class="panel-content">
+            <div class="panel-title"><span><i class="fa-solid fa-box"></i> Inventaris Konten Saya</span></div>
+            <div class="gallery-grid" id="myFilesGrid"></div>
+        </div>
+
+        <!-- TAB 5: SUPER ADMIN PANEL CONTROL -->
+        <div id="adminTab" class="panel-content">
+            <div class="panel-title" style="color: var(--accent);"><span><i class="fa-solid fa-user-shield"></i> Control Room Admin</span></div>
+            <div class="admin-toggle-bar">
+                <button class="toggle-sub-btn active" onclick="switchAdminZone('modZone', this)">Moderasi</button>
+                <button class="toggle-sub-btn" onclick="switchAdminZone('onlineZone', this)">User Online</button>
+                <button class="toggle-sub-btn" onclick="switchAdminZone('adminChatsZone', this)">Pantau Chat</button>
+                <button class="toggle-sub-btn" onclick="switchAdminZone('broadcastZone', this)">Sistem</button>
+            </div>
+
+            <div id="modZone" class="admin-sub-zone active">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:10px;">ANTREAN PERSIDANGAN MODERASI (PENDING):</label>
+                <div id="adminPendingList"></div>
+            </div>
+            
+            <!-- MONITORING LIVE USER ONLINE ZONE -->
+            <div id="onlineZone" class="admin-sub-zone">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:10px;">PENGGUNA YANG SEDANG AKTIF (ONLINE):</label>
+                <div id="adminOnlineUserList"></div>
+            </div>
+
+            <div id="adminChatsZone" class="admin-sub-zone">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:10px;">SELURUH LALU LINTAS CHAT KATALOG (SISTEM):</label>
+                <div id="adminGlobalChatsList"></div>
+            </div>
+            
+            <div id="broadcastZone" class="admin-sub-zone">
+                <div class="form-group">
+                    <label>Judul Pengumuman Global</label>
+                    <input type="text" id="admAnnTitle" class="form-control" placeholder="INFO UPGRADE FITUR" style="padding-left:14px;">
+                </div>
+                <div class="form-group">
+                    <label>Isi Pesan / Pengumuman</label>
+                    <textarea id="admAnnBody" class="form-control" placeholder="Tulis pengumuman disini..." style="padding-left:14px; min-height:60px;"></textarea>
+                </div>
+                <button type="button" class="btn-glow" onclick="publishAnnouncement()" style="margin-top:0; padding:10px; background:var(--bg-input); border:1px solid var(--accent); color:var(--accent); box-shadow:none;">Siarkan Pengumuman <i class="fa-solid fa-bullhorn"></i></button>
+
+                <div style="margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(0,230,118,0.03); border: 1px dashed var(--success);">
+                    <h5 style="color:var(--success); font-size:11px; margin-bottom:4px;"><i class="fa-solid fa-leaf"></i> RAM OPTIMIZATION ENGINE</h5>
+                    <button type="button" onclick="cleanOldChatsManual()" style="width:100%; padding:8px; background:rgba(0,230,118,0.2); border:1px solid var(--success); color:white; border-radius:8px; font-size:11px; cursor:pointer;">Paksa Bersihkan Chat Usia >7 Hari</button>
+                </div>
+                <div style="margin-top: 15px; padding: 12px; border-radius: 12px; background: rgba(255,23,68,0.03); border: 1px dashed var(--danger);">
+                    <h5 style="color:var(--danger); font-size:11px; margin-bottom:4px;"><i class="fa-solid fa-radiation"></i> CRITICAL ZONE SYSTEM NUKE</h5>
+                    <button type="button" onclick="executeNukeSystem()" style="width:100%; padding:8px; background:var(--danger); border:none; color:white; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">MEMBERSIHKAN TOTAL SELURUH DATA DATABASE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI ROUTING LOGIC SCRIPT -->
+    <script>
+        function switchAuth(isRegister) {
+            document.getElementById('registerForm').classList.toggle('hidden', !isRegister);
+            document.getElementById('loginForm').classList.toggle('hidden', isRegister);
+        }
+
+        function adjustUploadFields() {
+            const type = document.getElementById('contentType').value;
+            document.getElementById('titleGroup').classList.toggle('hidden', type === 'teks');
+            document.getElementById('priceGroup').classList.toggle('hidden', type !== 'produk');
+            document.getElementById('textGroup').classList.toggle('hidden', type === 'file');
+            document.getElementById('fileGroup').classList.toggle('hidden', type === 'teks');
+        }
+
+        function filterGallery(type, element) {
+            CURRENT_FILTER = type;
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            if (typeof loadShowroomGallery === 'function') loadShowroomGallery();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            const btns = document.querySelectorAll('.tab-btn');
+            if (tabId === 'showroomTab') btns[0].classList.add('active');
+            if (tabId === 'uploadTab') btns[1].classList.add('active');
+            if (tabId === 'ordersTab') { btns[2].classList.add('active'); if(typeof loadIncomingOrders === 'function') loadIncomingOrders(); }
+            if (tabId === 'myFilesTab') btns[3].classList.add('active');
+            if (tabId === 'adminTab') btns[4].classList.add('active');
+        }
+
+        function switchAdminZone(zoneId, btnElement) {
+            document.querySelectorAll('.admin-sub-zone').forEach(z => z.classList.remove('active'));
+            document.querySelectorAll('.toggle-sub-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(zoneId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        function showLoading(text) {
+            document.getElementById('loadingText').innerText = text;
+            document.getElementById('loadingScreen').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingScreen').style.display = 'none';
+        }
+    </script>
+
+    <!-- CORE ENGINE JAVASCRIPT SUPABASE PLATINUM HARDENED -->
+    <script>
+        const SUPABASE_URL = "https://nisbnzxxfiomjmragxbj.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pc2Juenh4ZmlvbWptcmFneGJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MzgwMTcsImV4cCI6MjA5NzExNDAxN30.Q-VOWBGT_KV-NMTfIVRNJ5LKQqy49cGdRcDPWfIeKpA";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const _SECRET_HASH = "MTA5"; 
+        let DATA_USER_LOGGED = null;
+        let CURRENT_FILTER = 'all';
+        let ONLINE_HEARTBEAT_INTERVAL = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedSession = localStorage.getItem('upload_igs_session');
+            if (savedSession) {
+                try {
+                    DATA_USER_LOGGED = JSON.parse(savedSession);
+                    const { data: freshUser, error } = await _supabase.from('users').select('*').eq('id', DATA_USER_LOGGED.id).maybeSingle();
+                    if (freshUser && !error) {
+                        DATA_USER_LOGGED = freshUser;
+                        localStorage.setItem('upload_igs_session', JSON.stringify(freshUser));
+                        await autoPurgeOldChats(); 
+                        bukaAplikasiUtama();
+                    } else {
+                        localStorage.removeItem('upload_igs_session');
+                        hideLoading();
+                    }
+                } catch(e) {
+                    localStorage.removeItem('upload_igs_session');
+                    hideLoading();
+                }
+            } else {
+                hideLoading();
+            }
+        });
+
+        // REGISTER LOGIC - ANTI ERROR RLS GITHUB STABLE BINDING
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const pin_akses = document.getElementById('regPin').value.trim();
+
+            showLoading("PROSES REGISTRASI MEMBER BARU...");
+            const roleUser = (username.toLowerCase() === 'ikiygasima') ? 'admin' : 'user';
+
+            // Cek manual dulu biar ga salah deteksi pesan error
+            const { data: userExist } = await _supabase.from('users').select('username').eq('username', username).maybeSingle();
+            if (userExist) {
+                hideLoading();
+                alert("Username benar-benar telah terpakai! Silakan gunakan nama lain.");
+                return;
+            }
+
+            const { data, error } = await _supabase.from('users').insert([{ username, password, pin_akses, role: roleUser }]).select();
+            if (error) { 
+                hideLoading(); 
+                alert("Gagal menyimpan ke database server. Pastikan tabel di Supabase mengizinkan akses pendaftaran."); 
+                return; 
+            }
+            
+            DATA_USER_LOGGED = data[0];
+            localStorage.setItem('upload_igs_session', JSON.stringify(DATA_USER_LOGGED));
+            setTimeout(() => { bukaAplikasiUtama(); }, 1000);
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('logUsername').value.trim();
+            const password = document.getElementById('logPassword').value;
+            const pin_akses = document.getElementById('logPin').value.trim();
+
+            showLoading("VERIFIKASI SECURITY...");
+            const { data, error } = await _supabase.from('users').select('*').eq('username', username).eq('password', password).eq('pin_akses', pin_akses).maybeSingle();
+            
+            if (error || !data) { hideLoading(); alert("Data Akses Login Anda Salah / Tidak Terdaftar!"); return; }
+            DATA_USER_LOGGED = data;
+            localStorage.setItem('upload_igs_session', JSON.stringify(DATA_USER_LOGGED));
+            bukaAplikasiUtama();
+        });
+
+        function bukaAplikasiUtama() {
+            document.getElementById('authInterface').style.display = 'none';
+            document.getElementById('appInterface').style.display = 'block';
+            document.getElementById('displayUsername').innerText = DATA_USER_LOGGED.username.toUpperCase();
+            document.getElementById('userAvatar').innerText = DATA_USER_LOGGED.username.charAt(0).toUpperCase();
+            hideLoading();
+            
+            loadAnnouncements(); loadShowroomGallery(); loadUserInventory(); loadIncomingOrders(); updateKuotaDisplay();
+            
+            // Jalankan detak jantung status online (ping ke server database setiap 30 detik)
+            sendOnlineHeartbeat();
+            ONLINE_HEARTBEAT_INTERVAL = setInterval(sendOnlineHeartbeat, 30000);
+        }
+
+        async function sendOnlineHeartbeat() {
+            if (!DATA_USER_LOGGED) return;
+            // Gunakan kolom updated_at bawaan PostgreSQL untuk melacak status aktivitas detak jantung user
+            await _supabase.from('users').update({ updated_at: new Date().toISOString() }).eq('id', DATA_USER_LOGGED.id);
+        }
+
+        function bukaGerbangAdmin() {
+            if (DATA_USER_LOGGED.username.toLowerCase() !== 'ikiygasima') { alert("Akses ditolak!"); return; }
+            const adminCodeInput = prompt("Masukkan Kode Otentikasi Validasi Pengembang:");
+            if (adminCodeInput && btoa(adminCodeInput) === _SECRET_HASH) { switchTab('adminTab'); loadAdminModule(); }
+        }
+
+        async function updateKuotaDisplay() {
+            const { count } = await _supabase.from('uploads').select('*', { count: 'exact', head: true }).eq('user_id', DATA_USER_LOGGED.id);
+            const maxKuota = DATA_USER_LOGGED.maksimal_kuota_file || 10;
+            document.getElementById('displayQuota').innerText = `Sisa Kuota: ${maxKuota - count} / ${maxKuota} Item`;
+        }
+
+        async function autoPurgeOldChats() {
+            const batasWaktuHari = new Date();
+            batasWaktuHari.setDate(batasWaktuHari.getDate() - 7); 
+            const isoPurgeDate = batasWaktuHari.toISOString();
+            await _supabase.from('announcements').delete().like('nama_file_sistem', 'ROOM_%').lt('created_at', isoPurgeDate);
+        }
+
+        async function cleanOldChatsManual() {
+            showLoading("OPTIMASI DAN MEMBERSIHKAN RAM STORAGE...");
+            await autoPurgeOldChats();
+            hideLoading();
+            alert("Sistem Pembersihan RAM Berhasil! Chat lama di atas 7 hari telah dihapus.");
+            if(DATA_USER_LOGGED.username.toLowerCase() === 'ikiygasima') loadAdminModule();
+        }
+        // FORM UPLOAD MECHANISM DENGAN SOLUSI EXPIRED_AT & AUTO REFRESH DASHBOARD
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const type = document.getElementById('contentType').value;
+            const { count } = await _supabase.from('uploads').select('*', { count: 'exact', head: true }).eq('user_id', DATA_USER_LOGGED.id);
+            if (count >= (DATA_USER_LOGGED.maksimal_kuota_file || 10)) { alert("Kuota penuh!"); return; }
+
+            // Mengisi aturan expired_at otomatis agar database tidak memicu error Constraint
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 7);
+
+            let payload = { 
+                user_id: DATA_USER_LOGGED.id, 
+                tipe_konten: type, 
+                status_moderasi: 'pending',
+                expired_at: expiryDate.toISOString() 
+            };
+
+            if (type === 'file') {
+                const f = document.getElementById('uploadFile').files[0];
+                if (!f) return;
+                payload.judul = document.getElementById('uploadTitle').value.trim() || f.name;
+                payload.nama_file_asli = f.name; payload.ukuran_file_mb = parseFloat((f.size / (1024 * 1024)).toFixed(2));
+            } else if (type === 'teks') {
+                payload.judul = "Catatan Log Informasi"; payload.deskripsi_teks = document.getElementById('uploadText').value;
+            } else if (type === 'produk') {
+                payload.judul = document.getElementById('uploadTitle').value.trim();
+                payload.harga = parseFloat(document.getElementById('uploadPrice').value) || 0;
+                payload.deskripsi_teks = document.getElementById('uploadText').value;
+            }
+
+            showLoading("MENYIMPAN KE SERVER...");
+            
+            const { data, error } = await _supabase.from('uploads').insert([payload]).select();
+            
+            hideLoading(); 
+            if (error) {
+                alert("Gagal mengunggah ke server: " + error.message);
+                return;
+            }
+
+            // Pembersihan form total
+            document.getElementById('uploadForm').reset(); 
+            adjustUploadFields();
+            
+            await loadUserInventory(); 
+            await updateKuotaDisplay(); 
+            
+            if (DATA_USER_LOGGED.username.toLowerCase() === 'ikiygasima') {
+                await loadAdminModule();
+            }
+
+            alert("Konten berhasil diunggah! Masuk ke antrean moderasi.");
+            switchTab('myFilesTab');
+        });
+
+        async function loadShowroomGallery() {
+            let query = _supabase.from('uploads').select('*, users(username)').eq('status_moderasi', 'disetujui');
+            if (CURRENT_FILTER !== 'all') query = query.eq('tipe_konten', CURRENT_FILTER);
+            const { data } = await query.order('created_at', { ascending: false });
+            const grid = document.getElementById('showroomGrid'); grid.innerHTML = "";
+
+            if (!data || data.length === 0) { grid.innerHTML = `<p style="text-align:center;font-size:11px;color:var(--text-muted);padding:20px 0;">Kosong.</p>`; return; }
+            data.forEach(item => {
+                const creator = item.users ? item.users.username : 'Anonim';
+                let elementTambahan = "";
+                if (item.tipe_konten === 'produk') {
+                    elementTambahan = `
+                        <span class="show-price">Rp ${parseInt(item.harga).toLocaleString()}</span>
+                        <button type="button" class="btn-action-order" onclick="bukaKamarChatLangsung(${item.id}, ${item.user_id}, '${item.judul.replace(/'/g, "\\'")}')"><i class="fa-solid fa-comments"></i> Kirim Pesan / Chat</button>
+                    `;
+                }
+                grid.innerHTML += `<div class="show-card"><div class="show-header"><span class="uploader-badge">@${creator}</span><span class="content-badge badge-${item.tipe_konten}">${item.tipe_konten}</span></div><div class="show-body"><h4>${item.judul}</h4><p>${item.deskripsi_teks || ''}</p>${elementTambahan}</div></div>`;
+            });
+        }
+
+        async function bukaKamarChatLangsung(itemId, ownerId, itemTitle) {
+            if (DATA_USER_LOGGED.id === ownerId) { alert("Anda pemilik katalog ini!"); return; }
+            const pesanAwal = prompt(`Mulai percakapan untuk: ${itemTitle}\nKetik pesan pertama Anda:`);
+            if (!pesanAwal) return;
+
+            showLoading("MEMBUAT JALUR CHAT KATALOG...");
+            const roomToken = `ROOM_${itemId}_${DATA_USER_LOGGED.id}_${ownerId}`;
+            const isiPaketChat = [{ pengirim: DATA_USER_LOGGED.username, teks: pesanAwal, waktu: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) }];
+            
+            await _supabase.from('announcements').insert([{ judul: `ORDER_INBOUND:${ownerId}`, isi_pengumuman: JSON.stringify(isiPaketChat), is_active: false, nama_file_sistem: roomToken }]);
+            hideLoading(); switchTab('ordersTab');
+        }
+
+        async function loadIncomingOrders() {
+            const { data } = await _supabase.from('announcements').select('*').like('nama_file_sistem', 'ROOM_%').order('created_at', { ascending: false });
+            const box = document.getElementById('orderListContainer'); box.innerHTML = "";
+
+            if (!data || data.length === 0) { box.innerHTML = `<p style="text-align:center;font-size:11px;color:var(--text-muted);padding:30px 0;">Belum ada riwayat chat aktif.</p>`; return; }
+
+            let adaChat = false;
+            data.forEach(room => {
+                const tokenParts = room.nama_file_sistem.split('_');
+                const pembeliId = tokenParts[2];
+                const penjualId = tokenParts[3];
+
+                if (DATA_USER_LOGGED.id == pembeliId || DATA_USER_LOGGED.id == penjualId) {
+                    adaChat = true;
+                    let listPesan = [];
+                    try { listPesan = JSON.parse(room.isi_pengumuman); } catch(e) { return; }
+                    if(!Array.isArray(listPesan)) return;
+
+                    let htmlBubles = "";
+                    listPesan.forEach(m => {
+                        const kelasBubble = (m.pengirim === DATA_USER_LOGGED.username) ? 'me' : 'them';
+                        htmlBubles += `<div class="msg-bubble ${kelasBubble}"><b>${m.pengirim}</b><br>${m.teks}<span class="msg-time">${m.waktu}</span></div>`;
+                    });
+
+                    box.innerHTML += `
+                        <div class="chat-room-container" id="room_box_${room.id}">
+                            <div class="chat-room-header"><span><i class="fa-regular fa-comments"></i> Sesi Chat ID #${room.id}</span></div>
+                            <div class="chat-messages-box">${htmlBubles}</div>
+                            <div class="chat-input-wrapper">
+                                <input type="text" id="reply_input_${room.id}" placeholder="Ketik balasan pesan...">
+                                <button type="button" class="btn-send-chat" onclick="balasChatKatalog(${room.id})"><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if(!adaChat) {
+                box.innerHTML = `<p style="text-align:center;font-size:11px;color:var(--text-muted);padding:30px 0;">Belum ada riwayat chat aktif.</p>`;
+            }
+        }
+
+        async function balasChatKatalog(roomId) {
+            const inputField = document.getElementById(`reply_input_${roomId}`);
+            const teksBalasan = inputField.value.trim();
+            if (!teksBalasan) return;
+
+            const { data: roomData } = await _supabase.from('announcements').select('*').eq('id', roomId).maybeSingle();
+            if (!roomData) return;
+
+            let listPesan = JSON.parse(roomData.isi_pengumuman);
+            listPesan.push({ pengirim: DATA_USER_LOGGED.username, teks: teksBalasan, waktu: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) });
+
+            await _supabase.from('announcements').update({ isi_pengumuman: JSON.stringify(listPesan) }).eq('id', roomId);
+            inputField.value = ""; loadIncomingOrders();
+        }
+
+        async function loadUserInventory() {
+            const { data } = await _supabase.from('uploads').select('*').eq('user_id', DATA_USER_LOGGED.id).order('created_at', { ascending: false });
+            const container = document.getElementById('myFilesGrid'); container.innerHTML = data && data.length > 0 ? "" : `<p style="text-align:center;font-size:11px;color:var(--text-muted);padding:20px 0;">Kosong.</p>`;
+            if(data) {
+                data.forEach(x => {
+                    const stat = x.status_moderasi === 'pending' ? `<span style="color:var(--warning);">Pending</span>` : `<span style="color:var(--success);">Live</span>`;
+                    container.innerHTML += `<div class="show-card" style="background:rgba(255,255,255,0.01);"><div class="show-header"><span class="content-badge badge-${x.tipe_konten}">${x.tipe_konten}</span>${stat}</div><div class="show-body"><h4>${x.judul}</h4></div></div>`;
+                });
+            }
+        }
+
+        // MASTER ADMIN MONITORING SUITE
+        async function loadAdminModule() {
+            // 1. Ambil Data Antrean Moderasi
+            const { data: pending } = await _supabase.from('uploads').select('*, users(username)').eq('status_moderasi', 'pending');
+            const pDiv = document.getElementById('adminPendingList'); pDiv.innerHTML = pending && pending.length > 0 ? "" : `<p style="font-size:11px;color:var(--text-muted);">Antrean bersih.</p>`;
+            if(pending) {
+                pending.forEach(p => {
+                    pDiv.innerHTML += `<div class="moderation-card"><div><b>${p.judul}</b> <span style="color:var(--accent);">@${p.users?.username}</span></div><div class="mod-actions"><button type="button" class="btn-mod approve" onclick="actionModeration(${p.id}, 'disetujui')">Approve</button><button type="button" class="btn-mod reject" onclick="actionModeration(${p.id}, 'tolak')">Reject</button></div></div>`;
+                });
+            }
+
+            // 2. Ambil Data Monitor Siapa Saja Yang Sedang Online (Last Seen < 1 Menit Lalu)
+            const batasWaktuOnline = new Date();
+            batasWaktuOnline.setMinutes(batasWaktuOnline.getMinutes() - 1); 
+            const { data: onlineUsers } = await _supabase.from('users').select('username, updated_at').gt('updated_at', batasWaktuOnline.toISOString());
+            
+            const oDiv = document.getElementById('adminOnlineUserList'); 
+            oDiv.innerHTML = onlineUsers && onlineUsers.length > 0 ? "" : `<p style="font-size:11px;color:var(--text-muted);">Seluruh pengguna sedang offline.</p>`;
+            if(onlineUsers) {
+                onlineUsers.forEach(u => {
+                    oDiv.innerHTML += `
+                        <div class="online-user-card">
+                            <div class="online-indicator">
+                                <div class="dot-pulse"></div>
+                                <span>@${u.username.toUpperCase()}</span>
+                            </div>
+                            <span style="font-size:10px; color:var(--text-muted);">Aktif Sekarang</span>
+                        </div>`;
+                });
+            }
+
+            // 3. Ambil Data Lalu Lintas Live Chat
+            const { data: allChats } = await _supabase.from('announcements').select('*').like('nama_file_sistem', 'ROOM_%');
+            const cDiv = document.getElementById('adminGlobalChatsList'); cDiv.innerHTML = allChats && allChats.length > 0 ? "" : `<p style="font-size:11px;color:var(--text-muted);">Tidak ada lalu lintas chat.</p>`;
+            if(allChats) {
+                allChats.forEach(ch => {
+                    let logs = []; try { logs = JSON.parse(ch.isi_pengumuman); } catch(e){}
+                    let tksPndk = logs.length > 0 ? `${logs[logs.length-1].pengirim}: ${logs[logs.length-1].teks}` : 'No text';
+                    cDiv.innerHTML += `<div class="live-ads-badge" style="border-color:var(--purple);"><div><b>Chat ID #${ch.id}</b><br><span style="color:#b2becd; font-size:10px;">${tksPndk}</span></div><i class="fa-solid fa-circle-minus" style="color:var(--danger); cursor:pointer;" onclick="hapusChatSpesifikOlehAdmin(${ch.id})"></i></div>`;
+                });
+            }
+        }
+
+        async function hapusChatSpesifikOlehAdmin(chatRoomId) {
+            if(confirm("Hapus paksa kamar chat ini dari server database?")) {
+                await _supabase.from('announcements').delete().eq('id', chatRoomId);
+                loadAdminModule();
+            }
+        }
+
+        async function actionModeration(id, type) {
+            if (type === 'disetujui') { await _supabase.from('uploads').update({ status_moderasi: 'disetujui' }).eq('id', id); } 
+            else { await _supabase.from('uploads').delete().eq('id', id); }
+            loadAdminModule(); loadShowroomGallery();
+        }
+
+        async function publishAnnouncement() {
+            const judul = document.getElementById('admAnnTitle').value.trim();
+            const isi = document.getElementById('admAnnBody').value.trim();
+            if(!judul || !isi) return;
+            await _supabase.from('announcements').update({ is_active: false }).eq('is_active', true);
+            await _supabase.from('announcements').insert([{ judul, isi_pengumuman: isi, is_active: true }]);
+            alert("Saran disiarkan!"); document.getElementById('admAnnTitle').value = ""; document.getElementById('admAnnBody').value = ""; loadAnnouncements();
+        }
+
+        async function executeNukeSystem() {
+            const verification = prompt("MASUKKAN KODE AKSES OTENTIKASI:");
+            if (verification && btoa(verification) === _SECRET_HASH) {
+                showLoading("CLEANING ALL DATA...");
+                await _supabase.from('uploads').delete().neq('id', 0);
+                hideLoading();
+                alert("SELURUH DATABASE BERHASIL DIKOSONGKAN!"); loadAdminModule(); loadShowroomGallery();
+            }
+        }
+
+        async function loadAnnouncements() {
+            const { data } = await _supabase.from('announcements').select('*').eq('is_active', true).maybeSingle();
+            if (data) { document.getElementById('announcementBox').style.display = 'flex'; document.getElementById('annTitle').innerText = data.judul.toUpperCase(); document.getElementById('annBody').innerText = data.isi_pengumuman; }
+        }
+
+        async function logoutSistem() { 
+            if (confirm("Keluar dari sesi sistem?")) { 
+                if(ONLINE_HEARTBEAT_INTERVAL) clearInterval(ONLINE_HEARTBEAT_INTERVAL);
+                localStorage.removeItem('upload_igs_session'); 
+                window.location.reload(); 
+            } 
+        }
+    </script>
+</body>
+</html>
